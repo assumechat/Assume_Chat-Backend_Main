@@ -1,8 +1,8 @@
 import express, { Request, Response, NextFunction } from 'express';
 import logger from './middleware/logger';
-import healthRouter from './routes/health';
+import healthRouter from './routes/health.Route';
 import AuthRouter from './routes/auth.Routes';
-
+import userProfileRouter from './routes/userProfile.Route';
 import { connectDB } from './utils/db';
 import dotenv from 'dotenv';
 
@@ -24,6 +24,7 @@ async function bootstrap() {
     // ─── ROUTES ──────────────────────────────────────────────────────────────────
     app.use('/health', healthRouter);
     app.use('/Auth', AuthRouter);
+    app.use('/userProfile', userProfileRouter);
     app.get('/', (_req: Request, res: Response) => {
         res.send({ message: 'Assume Chat API up and running!' });
     });
