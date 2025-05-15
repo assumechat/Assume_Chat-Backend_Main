@@ -1,5 +1,5 @@
 import { Schema, model, Document, Types } from 'mongoose';
-import { IUserProfile,Interest,ConnectionPreference } from '../types/userProfile.type';
+import { IUserProfile, Interest, ConnectionPreference } from '../types/userProfile.type';
 
 const UserProfileSchema = new Schema<IUserProfile>(
   {

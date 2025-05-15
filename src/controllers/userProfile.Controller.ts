@@ -4,6 +4,7 @@ import { Types } from 'mongoose';
 import { UserProfileModel } from '../models/userProfile.Models';
 import { sendSuccess, sendError } from '../utils/apiResponse';
 import { IUserProfile } from "../types/userProfile.type"
+import { UserModel } from '../models/user.Models';
 /** Create or update user profile */
 export async function upsertProfile(req: Request, res: Response, next: NextFunction) {
   const userId = req.body.userId || req.params.userId;
@@ -18,6 +19,12 @@ export async function upsertProfile(req: Request, res: Response, next: NextFunct
       { ...data, userId },
       { new: true, upsert: true, setDefaultsOnInsert: true }
     );
+    if (!profile) {
+      return sendError(res, "Error While Createing UserProfile", 501)
+    }
+    const userUpdate = await UserModel.findByIdAndUpdate(userId, {
+      userDataId: profile._id
+    });
     return sendSuccess(res, profile, 'Profile saved');
   } catch (err: any) {
     return sendError(res, 'Failed to save profile', 500, err);
