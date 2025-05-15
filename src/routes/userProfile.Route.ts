@@ -1,5 +1,3 @@
-
-// src/routes/userProfile.Routes.ts
 import { Router } from 'express';
 import {
   upsertProfile,
