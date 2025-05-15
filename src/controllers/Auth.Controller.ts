@@ -39,7 +39,7 @@ const signup: RequestHandler = async (req, res, next) => {
         if (!code) missingFields.push('code');
         if (!password) missingFields.push('password');
         if (!name) missingFields.push('name');
-        //if (!college) missingFields.push('college');
+        if (!college) missingFields.push('college');
         if (missingFields.length > 0) {
             return sendError(res, `Missing required fields: ${missingFields.join(', ')}`, 400);
         }
@@ -47,7 +47,7 @@ const signup: RequestHandler = async (req, res, next) => {
         await verifyOtp(email, code);
 
         const hash = await bcrypt.hash(password, 10);
-        const user = await UserModel.create({ email, password: hash, name,  emailVerified: true });
+        const user = await UserModel.create({ email, password: hash, name, college, emailVerified: true });
         if (!user) {
             return sendError(res, "Error While Creating User Pls Try Again", 501);
         }
