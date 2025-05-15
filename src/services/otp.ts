@@ -22,8 +22,9 @@ export async function generateAndSendOtp(email: string, userId?: Types.ObjectId)
 }
 
 export async function verifyOtp(email: string, code: string) {
-  const otp = await OtpModel.findOne({ email, code, used: false });
-  if (!otp) throw new Error('Invalid OTP');
+  const otp = await OtpModel.findOne({  email: email.trim().toLowerCase() ,code: String(code).trim(), used: false });
+  if (!otp) throw new Error('invalid otp');
+
   if (otp.expiresAt < new Date()) throw new Error('OTP expired');
 
   otp.used = true;
