@@ -5,7 +5,6 @@ import AuthRouter from './routes/auth.Routes';
 import userProfileRouter from './routes/userProfile.Route';
 import { connectDB } from './utils/db';
 import dotenv from 'dotenv';
-import cors from 'cors';
 
 dotenv.config();
 
@@ -13,15 +12,7 @@ async function bootstrap() {
     await connectDB();
 
     const app = express();
-    const PORT = process.env.PORT || 3001;
-
-    // ─── ENABLE CORS ─────────────────────────────────────────────────────────────
-    app.use(cors({
-        origin: 'http://localhost:3000', // allow frontend origin
-        methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-        allowedHeaders: ['Content-Type', 'Authorization'],
-        credentials: true
-    }));
+    const PORT = process.env.PORT || 3000;
 
     // ─── BODY PARSERS ─────────────────────────────────────────────────────────────
     app.use(express.json());                          // <— parses application/json
