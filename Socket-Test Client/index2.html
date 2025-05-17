@@ -14,7 +14,7 @@
         const log = (msg) => {
             document.getElementById("logs").textContent += msg + "\n";
         };
-        const socket = io("http://localhost:3000/queue");
+        const socket = io("http://localhost:3001/queue");
         socket.on("connect", () => log(`Connected: ${socket.id}`));
         socket.on("queueUpdate", (data) => log(`queueUpdate ${JSON.stringify(data)}`));
         document.getElementById("join").onclick = () => socket.emit("joinQueue");

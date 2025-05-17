@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 import express, { Request, Response, NextFunction } from 'express';
+import cors from 'cors';
 import logger from './middleware/logger';
 import healthRouter from './routes/health.Route';
 import AuthRouter from './routes/auth.Routes';
@@ -25,7 +26,9 @@ async function bootstrap() {
 
     // ─── LOGGING ─────────────────────────────────────────────────────────────────
     app.use(logger);
-
+    app.use(cors({
+        origin : "*"
+    }))
     // ─── ROUTES ──────────────────────────────────────────────────────────────────
     app.use('/health', healthRouter);
     app.use('/Auth', AuthRouter);

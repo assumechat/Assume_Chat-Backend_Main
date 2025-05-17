@@ -85,7 +85,10 @@ const login: RequestHandler = async (req, res, next) => {
         user.refreshTokens.push(refreshToken);
         await user.save();
 
-        return sendSuccess(res, { accessToken, refreshToken, user }, 'Login successful', 200);
+        const Cleaneduser = user.toObject();
+        delete (Cleaneduser as { password?: string }).password;
+        delete (Cleaneduser as { refreshTokens?: Array<any> }).refreshTokens;
+        return sendSuccess(res, { accessToken, refreshToken, user: Cleaneduser }, 'Login successful', 200);
     } catch (err: any) {
         return sendError(res, err.message, 500, err);
     }
@@ -112,7 +115,10 @@ const refreshTokenHandler: RequestHandler = async (req, res, next) => {
         await user.save();
 
         const newAccessToken = signAccessToken({ userId: payload.userId, email: payload.email });
-        return sendSuccess(res, { accessToken: newAccessToken, refreshToken: newRefreshToken }, 'Token refreshed', 200);
+        const Cleaneduser = user.toObject();
+        delete (Cleaneduser as { password?: string }).password;
+        delete (Cleaneduser as { refreshTokens?: Array<any> }).refreshTokens;
+        return sendSuccess(res, { accessToken: newAccessToken, refreshToken: newRefreshToken, user: Cleaneduser }, 'Token refreshed', 200);
     } catch (err: any) {
         return sendError(res, 'Could not refresh token', 403, err);
     }

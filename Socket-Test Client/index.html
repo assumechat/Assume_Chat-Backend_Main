@@ -12,7 +12,7 @@
       console.log(msg);
     };
 
-    const socket = io("http://localhost:3000/queue", { transports: ["websocket"] });
+    const socket = io("http://localhost:3001/queue", { transports: ["websocket"] });
     socket.on("connect", ()  => log(`✔️ Connected as ${socket.id}`));
     socket.on("queueUpdate", data => log(`↔️ queueUpdate ${JSON.stringify(data)}`));
     socket.on("matched", ({ roomId, peer }) =>

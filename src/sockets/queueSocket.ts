@@ -1,6 +1,7 @@
 // src/sockets/queueSocket.ts
 import { Server, Socket } from 'socket.io';
 
+// In-memory waiting list (for single-instance setups)
 const waiting: string[] = [];
 
 export function initializeQueueSocket(io: Server) {
@@ -8,8 +9,12 @@ export function initializeQueueSocket(io: Server) {
 
     queueNs.on('connection', (socket: Socket) => {
         console.log(`🔌 [Queue] ${socket.id} connected`);
+        // Notify just this socket of its position
         emitQueueUpdate(socket);
+        // Notify all waiting clients of updated counts
+        broadcastQueueUpdate();
 
+        // Handle join
         socket.on('joinQueue', () => {
             if (!waiting.includes(socket.id)) {
                 waiting.push(socket.id);
@@ -19,6 +24,7 @@ export function initializeQueueSocket(io: Server) {
             tryPair();
         });
 
+        // Handle leave
         socket.on('leaveQueue', () => {
             const idx = waiting.indexOf(socket.id);
             if (idx !== -1) {
@@ -29,6 +35,7 @@ export function initializeQueueSocket(io: Server) {
             tryPair();
         });
 
+        // Clean up on disconnect
         socket.on('disconnect', () => {
             const idx = waiting.indexOf(socket.id);
             if (idx !== -1) {
@@ -40,25 +47,39 @@ export function initializeQueueSocket(io: Server) {
         });
     });
 
+    /** Send queue status to a single socket */
     function emitQueueUpdate(socket: Socket) {
+        const pos = waiting.indexOf(socket.id);
         socket.emit('queueUpdate', {
-            position: waiting.indexOf(socket.id) + 1 || null,
+            position: pos >= 0 ? pos + 1 : null,
             waiting: waiting.length,
             online: queueNs.sockets.size,
         });
     }
 
+    /** Broadcast queue status to all waiting clients in the queue */
+    /** Broadcast queue status to all connected clients */
     function broadcastQueueUpdate() {
+        const waitingCount = waiting.length;
+        const onlineCount = queueNs.sockets.size;
+
+        // First, send a summary update to everyone (no position)
+        queueNs.emit('queueUpdate', {
+            position: null,
+            waiting: waitingCount,
+            online: onlineCount,
+        });
+
+        // Then, send detailed position updates to those in the waiting list
         waiting.forEach((id, idx) => {
             queueNs.to(id).emit('queueUpdate', {
                 position: idx + 1,
-                waiting: waiting.length,
-                online: queueNs.sockets.size,
+                waiting: waitingCount,
+                online: onlineCount,
             });
         });
     }
-
-    // ——— New pairing logic ———
+    /** Pair off clients in the queue when there are at least two waiting */
     function tryPair() {
         while (waiting.length >= 2) {
             const a = waiting.shift()!; // oldest
