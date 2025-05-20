@@ -33,13 +33,12 @@ const verifyOtpHandler: RequestHandler = async (req, res, next) => {
 // 3. Signup after OTP verified
 const signup: RequestHandler = async (req, res, next) => {
     try {
-        const { email, code, password, name, college } = req.body;
+        const { email, code, password, name } = req.body;
         const missingFields = [];
         if (!email) missingFields.push('email');
         if (!code) missingFields.push('code');
         if (!password) missingFields.push('password');
         if (!name) missingFields.push('name');
-        //if (!college) missingFields.push('college');
         if (missingFields.length > 0) {
             return sendError(res, `Missing required fields: ${missingFields.join(', ')}`, 400);
         }
@@ -47,7 +46,7 @@ const signup: RequestHandler = async (req, res, next) => {
         await verifyOtp(email, code);
 
         const hash = await bcrypt.hash(password, 10);
-        const user = await UserModel.create({ email, password: hash, name,  emailVerified: true });
+        const user = await UserModel.create({ email, password: hash, name, emailVerified: true });
         if (!user) {
             return sendError(res, "Error While Creating User Pls Try Again", 501);
         }
@@ -86,7 +85,10 @@ const login: RequestHandler = async (req, res, next) => {
         user.refreshTokens.push(refreshToken);
         await user.save();
 
-        return sendSuccess(res, { accessToken, refreshToken, user }, 'Login successful', 200);
+        const Cleaneduser = user.toObject();
+        delete (Cleaneduser as { password?: string }).password;
+        delete (Cleaneduser as { refreshTokens?: Array<any> }).refreshTokens;
+        return sendSuccess(res, { accessToken, refreshToken, user: Cleaneduser }, 'Login successful', 200);
     } catch (err: any) {
         return sendError(res, err.message, 500, err);
     }
@@ -113,7 +115,10 @@ const refreshTokenHandler: RequestHandler = async (req, res, next) => {
         await user.save();
 
         const newAccessToken = signAccessToken({ userId: payload.userId, email: payload.email });
-        return sendSuccess(res, { accessToken: newAccessToken, refreshToken: newRefreshToken }, 'Token refreshed', 200);
+        const Cleaneduser = user.toObject();
+        delete (Cleaneduser as { password?: string }).password;
+        delete (Cleaneduser as { refreshTokens?: Array<any> }).refreshTokens;
+        return sendSuccess(res, { accessToken: newAccessToken, refreshToken: newRefreshToken, user: Cleaneduser }, 'Token refreshed', 200);
     } catch (err: any) {
         return sendError(res, 'Could not refresh token', 403, err);
     }

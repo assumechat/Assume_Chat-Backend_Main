@@ -1,18 +1,25 @@
+
+import dotenv from 'dotenv';
+dotenv.config();
+
 import express, { Request, Response, NextFunction } from 'express';
+import cors from 'cors';
 import logger from './middleware/logger';
 import healthRouter from './routes/health.Route';
 import AuthRouter from './routes/auth.Routes';
 import userProfileRouter from './routes/userProfile.Route';
 import { connectDB } from './utils/db';
-import dotenv from 'dotenv';
-import cors from 'cors';
+import http from 'http';
+import { Server } from 'socket.io';
+import { initializeQueueSocket } from './sockets/queueSocket';
+import { initializeChatSocket } from './sockets/chatSocket';
 
-dotenv.config();
 
 async function bootstrap() {
     await connectDB();
 
     const app = express();
+<<<<<<< HEAD
     const PORT = process.env.PORT || 3001;
 
     // ─── ENABLE CORS ─────────────────────────────────────────────────────────────
@@ -22,6 +29,8 @@ async function bootstrap() {
         allowedHeaders: ['Content-Type', 'Authorization'],
         credentials: true
     }));
+=======
+>>>>>>> ac5e5dbcee066f0473a672852ec3e83be34fa202
 
     // ─── BODY PARSERS ─────────────────────────────────────────────────────────────
     app.use(express.json());                          // <— parses application/json
@@ -29,7 +38,9 @@ async function bootstrap() {
 
     // ─── LOGGING ─────────────────────────────────────────────────────────────────
     app.use(logger);
-
+    app.use(cors({
+        origin : "*"
+    }))
     // ─── ROUTES ──────────────────────────────────────────────────────────────────
     app.use('/health', healthRouter);
     app.use('/Auth', AuthRouter);
@@ -44,9 +55,22 @@ async function bootstrap() {
         res.status(500).send({ error: 'Something went wrong' });
     });
 
-    app.listen(PORT, () => {
-        console.log(`🚀 Server listening on http://localhost:${PORT}`);
+    // create an HTTP server from Express
+    const httpServer = http.createServer(app);
+
+    // attach Socket.IO
+    const io = new Server(httpServer, {
+        cors: { origin: '*' }, // adjust in prod
     });
+
+    // initialize your /queue namespace
+    initializeQueueSocket(io);
+    initializeChatSocket(io);
+    // start listening on the HTTP server (both Express + Socket.IO)
+    const PORT = process.env.PORT || 3000;
+    httpServer.listen(PORT, () =>
+        console.log(`🚀 Server (HTTP + WS) listening on http://localhost:${PORT}`)
+    );
 }
 
-bootstrap();
+bootstrap().catch(console.error);

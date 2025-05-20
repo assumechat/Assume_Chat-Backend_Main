@@ -10,7 +10,7 @@ import {
 const router = Router();
 
 router.post('/request-otp', requestOtp);
-router.post('/verify-otp', verifyOtpHandler);
+// router.post('/verify-otp', verifyOtpHandler);
 router.post('/signup', signup);
 router.post('/login', login);
 router.post('/refresh', refreshTokenHandler);

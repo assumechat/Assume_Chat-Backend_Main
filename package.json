@@ -23,22 +23,22 @@
   "homepage": "https://github.com/assumechat/Assume_Chat-Backend_Main#readme",
   "dependencies": {
     "bcrypt": "^6.0.0",
-    "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.14.2",
-    "nodemailer": "^7.0.3"
+    "nodemailer": "^7.0.3",
+    "socket.io": "^4.8.1"
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",
-    "@types/cors": "^2.8.18",
     "@types/dotenv": "^6.1.1",
     "@types/express": "^5.0.1",
     "@types/jsonwebtoken": "^9.0.9",
     "@types/mongoose": "^5.11.96",
     "@types/node": "^22.15.17",
     "@types/nodemailer": "^6.4.17",
+    "@types/socket.io": "^3.0.1",
     "nodemon": "^3.1.10",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.8.3"

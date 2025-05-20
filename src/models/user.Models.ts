@@ -7,8 +7,7 @@ const UserSchema = new Schema<IUser>(
         password: { type: String, required: true },
         name: { type: String, required: true },
         emailVerified: { type: Boolean, default: false },
-        college: { type: String },
-        userDataId: { type: Schema.Types.ObjectId, ref: 'UserData' },
+        userDataId: { type: Schema.Types.ObjectId, ref: 'UserProfile' },
         refreshTokens: { type: [String], default: [] },
     },
     { timestamps: true }

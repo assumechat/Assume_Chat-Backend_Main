@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Queue Test</title>
+</head>
+
+<body>
+    <h1>Queue Socket Test</h1>
+    <button id="join">Join Queue</button>
+    <pre id="logs"></pre>
+    <script src="https://cdn.jsdelivr.net/npm/socket.io-client@4/dist/socket.io.min.js"></script>
+    <script>
+        const log = (msg) => {
+            document.getElementById("logs").textContent += msg + "\n";
+        };
+        const socket = io("http://localhost:3001/queue");
+        socket.on("connect", () => log(`Connected: ${socket.id}`));
+        socket.on("queueUpdate", (data) => log(`queueUpdate ${JSON.stringify(data)}`));
+        document.getElementById("join").onclick = () => socket.emit("joinQueue");
+    </script>
+</body>
+
+</html>
