@@ -1,4 +1,3 @@
-
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -14,23 +13,19 @@ import { Server } from 'socket.io';
 import { initializeQueueSocket } from './sockets/queueSocket';
 import { initializeChatSocket } from './sockets/chatSocket';
 
-
 async function bootstrap() {
     await connectDB();
 
     const app = express();
-<<<<<<< HEAD
     const PORT = process.env.PORT || 3001;
 
     // ─── ENABLE CORS ─────────────────────────────────────────────────────────────
     app.use(cors({
-        origin: 'http://localhost:3000', 
+        origin: 'http://localhost:3000',
         methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
         allowedHeaders: ['Content-Type', 'Authorization'],
         credentials: true
     }));
-=======
->>>>>>> ac5e5dbcee066f0473a672852ec3e83be34fa202
 
     // ─── BODY PARSERS ─────────────────────────────────────────────────────────────
     app.use(express.json());                          // <— parses application/json
@@ -38,9 +33,7 @@ async function bootstrap() {
 
     // ─── LOGGING ─────────────────────────────────────────────────────────────────
     app.use(logger);
-    app.use(cors({
-        origin : "*"
-    }))
+
     // ─── ROUTES ──────────────────────────────────────────────────────────────────
     app.use('/health', healthRouter);
     app.use('/Auth', AuthRouter);
@@ -48,7 +41,6 @@ async function bootstrap() {
     app.get('/', (_req: Request, res: Response) => {
         res.send({ message: 'Assume Chat API up and running!' });
     });
-
 
     app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
         console.error(err);
@@ -63,11 +55,11 @@ async function bootstrap() {
         cors: { origin: '*' }, // adjust in prod
     });
 
-    // initialize your /queue namespace
+    // initialize your /queue and /chat namespaces
     initializeQueueSocket(io);
     initializeChatSocket(io);
-    // start listening on the HTTP server (both Express + Socket.IO)
-    const PORT = process.env.PORT || 3000;
+
+    // start listening
     httpServer.listen(PORT, () =>
         console.log(`🚀 Server (HTTP + WS) listening on http://localhost:${PORT}`)
     );

@@ -28,6 +28,7 @@ export async function upsertProfile(req: Request, res: Response, next: NextFunct
     });
     return sendSuccess(res, profile, 'Profile saved');
   } catch (err: any) {
+    console.log(err);
     return sendError(res, 'Failed to save profile', 500, err);
   }
 }
