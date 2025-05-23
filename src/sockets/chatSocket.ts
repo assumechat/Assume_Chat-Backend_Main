@@ -12,12 +12,12 @@ export function initializeChatSocket(io: Server) {
     console.log(`🔌 [Chat] ${socket.id} connected`);
 
     // Client requests to join a room
-    socket.on(ChatEvent.JOIN_ROOM, ({ roomId }: { roomId: string }) => {
-      socket.join(roomId);
-      console.log(`🛖 [Chat] ${socket.id} joined room ${roomId}`);
-      socket.emit(ChatEvent.JOINED_ROOM, { roomId });
-
-      // Notify peer can be handled client-side or via a 'peerJoined' event
+    socket.on(ChatEvent.JOIN_ROOM, ({ roomId }) => {
+      if (!socket.rooms.has(roomId)) {
+        socket.join(roomId);
+        console.log(`🛖 [Chat] ${socket.id} joined room ${roomId}`);
+        socket.emit(ChatEvent.JOINED_ROOM, { roomId });
+      }
     });
 
     // Handle incoming chat messages
@@ -40,6 +40,11 @@ export function initializeChatSocket(io: Server) {
       socket.to(roomId).emit(ChatEvent.TYPING, { senderId: socket.id, peerId });
     });
 
+    socket.on('leaveRoom', ({ roomId }) => {
+      socket.leave(roomId);
+      socket.to(roomId).emit('peerLeft', { peerId: socket.id, roomId });
+      console.log(`⬅️ [Chat] ${socket.id} left room ${roomId} (peer notified)`);
+    });
     // Handle disconnects
     socket.on('disconnect', (reason) => {
       console.log(`❌ [Chat] ${socket.id} disconnected: ${reason}`);
@@ -51,8 +56,3 @@ export function initializeChatSocket(io: Server) {
     });
   });
 }
-
-// Usage in your server bootstrap:
-// import { initializeChatSocket } from './sockets/chatSocket';
-// const io = new Server(httpServer, { /* options */ });
-// initializeChatSocket(io);
