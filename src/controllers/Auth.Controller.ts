@@ -60,6 +60,7 @@ const signup: RequestHandler = async (req, res, next) => {
 
         return sendSuccess(res, { user: userWithoutPassword, accessToken, refreshToken }, 'Signin Successful', 201);
     } catch (err: any) {
+        console.log("error" , err);
         return sendError(res, err.message || 'Signup failed', 400, err);
     }
 };
@@ -143,11 +144,32 @@ const logout: RequestHandler = async (req: Request, res: Response, next: NextFun
 };
 
 
+//4.Email varification
+const checkEmailExists: RequestHandler = async (req, res, next) => {
+    try {
+        const { email } = req.body;
+        if (!email) {
+            res.status(400).json({ message: "Email is required" });
+            return;
+        }
+        const existingUser = await UserModel.findOne({ email });
+        if (existingUser) {
+            res.status(409).json({ message: 'Email already registered' });
+            return;
+        }
+        res.status(200).json({ message: 'Email is available' });
+    } catch (err) {
+        next(err);
+    }
+};
+
+
 export {
     requestOtp,
     login,
     logout,
     signup,
     refreshTokenHandler,
-    verifyOtpHandler
+    verifyOtpHandler,
+    checkEmailExists,
 };
