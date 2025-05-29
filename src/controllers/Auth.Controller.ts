@@ -9,7 +9,6 @@ import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../utils/
 // 1. Request OTP
 const requestOtp: RequestHandler = async (req, res, next) => {
     try {
-        console.log(req.body)
         const { email } = req.body;
         if (!email) return sendError(res, "Pls Provide Email To Send Email", 401);
         await generateAndSendOtp(email);
