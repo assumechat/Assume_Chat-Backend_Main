@@ -20,6 +20,17 @@ export function initializeChatSocket(io: Server) {
       }
     });
 
+    socket.on(ChatEvent.HANDSHAKE, (payload: {
+      roomId: string;
+      userId: string;
+      userName?: string;
+    }) => {
+      const { roomId, userId, userName } = payload;
+      // send to everyone else in that room
+      socket.to(roomId).emit(ChatEvent.HANDSHAKE, { userId, userName });
+      console.log(`🤝 [Chat] handshake from ${socket.id} in ${roomId}:`, userId, userName);
+    });
+
     // Handle incoming chat messages
     socket.on(ChatEvent.MESSAGE, (payload: { roomId: string; content: string; peerId: string }) => {
       const { roomId, content, peerId } = payload;
