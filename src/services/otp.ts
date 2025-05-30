@@ -18,7 +18,7 @@ export async function generateAndSendOtp(email: string, userId?: Types.ObjectId)
   // for prod 
   if (process.env.ENVIRONMENT === "PROD") {
     await sendMail(email, 'Your OTP Code', html).then(() => {
-      console.log('Email sent!');
+      // console.log('Email sent!');
     }).catch(console.error);
   } else {
     console.log(`Testing ${code} SEND TO ${email}`)
