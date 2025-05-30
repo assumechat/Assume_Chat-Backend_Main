@@ -9,7 +9,6 @@ import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../utils/
 // 1. Request OTP
 const requestOtp: RequestHandler = async (req, res, next) => {
     try {
-        console.log(req.body)
         const { email } = req.body;
         if (!email) return sendError(res, "Pls Provide Email To Send Email", 401);
         await generateAndSendOtp(email);
@@ -61,7 +60,7 @@ const signup: RequestHandler = async (req, res, next) => {
 
         return sendSuccess(res, { user: userWithoutPassword, accessToken, refreshToken }, 'Signin Successful', 201);
     } catch (err: any) {
-        console.log("error" , err);
+        console.log("error", err);
         return sendError(res, err.message || 'Signup failed', 400, err);
     }
 };
