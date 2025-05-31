@@ -12,7 +12,8 @@ import http from 'http';
 import { Server } from 'socket.io';
 import { initializeQueueSocket } from './sockets/queueSocket';
 import { initializeChatSocket } from './sockets/chatSocket';
-
+//feedback
+import feedbackRouter from './routes/feedback.Routes';
 async function bootstrap() {
     await connectDB();
 
@@ -38,6 +39,7 @@ async function bootstrap() {
     app.use('/health', healthRouter);
     app.use('/Auth', AuthRouter);
     app.use('/userProfile', userProfileRouter);
+    app.use('/feedback' , feedbackRouter);
     app.get('/', (_req: Request, res: Response) => {
         res.send({ message: 'Assume Chat API up and running!' });
     });
