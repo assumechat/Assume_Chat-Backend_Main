@@ -1,16 +1,16 @@
-import { Schema, Document, model } from "mongoose";
+import { Schema, Document, model , Types } from "mongoose";
 
 interface UserReport extends Document {
-  userId: string;
-  name: string;
+  // userId: Types.ObjectId;
+  peerId: Types.ObjectId;
   reasons : string;
   details: string;
   date: Date;
 }
 
 const ReportSchema = new Schema<UserReport>({
-  userId: { type: String, required: true },
-  name: { type: String, required: true },
+  //userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  peerId: { type: Schema.Types.ObjectId, ref: 'User', required: true }, 
   reasons : { type: String, required: true },
   details: { type: String },
   date: { type: Date, default: Date.now },

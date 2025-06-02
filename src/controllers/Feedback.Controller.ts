@@ -1,46 +1,54 @@
 import { Request, Response } from "express";
 import { FeedbackModel } from "../models/Feedback.Models";
 import { ReportModel } from "../models/Report.Models";
+import { sendError, sendSuccess } from "../utils/apiResponse";
+import { Types } from "mongoose";
 
-//1. feedback
+// 1. Feedback
 export const submitFeedback = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { name, comment, rating } = req.body;
-    //console.log(name  , comment , rating);
-    if (!name  || !comment || !rating) {
-      res.status(400).json({ error: "All fields are required" });
-      return;
-    }
-    const feedback = new FeedbackModel({ name,  comment, rating , date: new Date() });
-   // console.log(feedback);
-    await feedback.save();
+    const { feedbackBy,feedbackTo,  comment, rating } = req.body;
+    const missingFields: string[] = [];
 
-    res.status(201).json({ message: "Feedback submitted successfully" });
-  } catch (error) {
+    if (!feedbackBy) missingFields.push('feedbackBy');
+    if (!feedbackTo) missingFields.push('feedbackTo');
+    if (!comment) missingFields.push('comment');
+    if (!rating) missingFields.push('rating');
+   // console.log(feedbackBy , feedbackTo , comment , rating);
+    if (missingFields.length > 0) {
+      return sendError(res, `Missing required fields: ${missingFields.join(', ')}`, 400);
+    }
+
+    if (!Types.ObjectId.isValid(feedbackBy) || !Types.ObjectId.isValid(feedbackTo)) {
+      return sendError(res, 'Invalid userId or peerId format', 400);
+    }
+    const feedback = new FeedbackModel({feedbackBy , feedbackTo , comment, rating });
+    console.log(feedback);
+    await feedback.save();
+    return sendSuccess(res, 'Feedback submitted successfully!');
+  } catch (error: any) {
     console.error("Error submitting feedback:", error);
-    res.status(500).json({ error: "Internal server error" });
+    return sendError(res, error.message || 'Error submitting feedback', 400, error);
   }
 };
 
+// 2. Report
+export const submitReport = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const {  peerId, reasons, details } = req.body;
+    const missingFields = [];
+    console.log(  peerId , reasons , details);
+    if (!peerId) missingFields.push('peerId');
+    if (!reasons) missingFields.push('reasons');
 
-//2.Report
-
-export const submitReport = async(req : Request , res : Response) : Promise<void> => {
-  try{
-    const { userId , name , reasons , details }= req.body;
-    console.log(userId , name , reasons , details);
-    if(!name || !userId || !reasons ) {
-      res.status(400).json({ error: "All feilds are required"});
-      return;
+    if (missingFields.length > 0) {
+      return sendError(res, `Missing required fields: ${missingFields.join(', ')}`, 400);
     }
-    const report = new ReportModel({ userId , name , reasons , details , date: new Date() });
-    console.log(report);
+    const report = new ReportModel({  peerId , reasons, details });
     await report.save();
-    res.status(201).json({ message: "Report submitted successfullly"});
+    return sendSuccess(res, 'Report submitted successfully!');
+  } catch (error: any) {
+    console.error("Error submitting report:", error);
+    return sendError(res, error.message || 'Error submitting report', 400, error);
   }
-  catch(error){
-    console.error("error submitting report" , error);
-    res.status(500).json({error : "Internal server error"});
-  }
-}
-
+};

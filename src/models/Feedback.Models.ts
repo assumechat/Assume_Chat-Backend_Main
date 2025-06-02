@@ -1,16 +1,17 @@
-import {model ,Document , Types, Schema} from  'mongoose';
+import { model, Document, Types, Schema } from 'mongoose';
 
 interface IFeedback extends Document {
-  name: string;
+  feedbackBy: Types.ObjectId;
+ feedbackTo: Types.ObjectId;
   comment: string;
   rating: number;
-  date: Date;
 }
-const FeedbackSchema = new Schema({
-    name: { type: String, required: true },
-    comment: { type: String , required: true},
-    rating: { type: Number, required: true, min: 1, max: 5 },
-    date: {type : Date , required: true , default: Date.now},
-},{ timestamps: true });
+
+const FeedbackSchema = new Schema<IFeedback>({
+  feedbackBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  feedbackTo: { type: Schema.Types.ObjectId, ref: 'User', required: true }, 
+  comment: { type: String, required: true },
+  rating: { type: Number, required: true, min: 1, max: 5 },
+}, { timestamps: true });
 
 export const FeedbackModel = model<IFeedback>('Feedback', FeedbackSchema);
