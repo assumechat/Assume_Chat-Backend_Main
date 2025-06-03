@@ -10,11 +10,11 @@ export interface IOtp extends Document {
 
 const OtpSchema = new Schema<IOtp>(
   {
-    userId:    { type: Schema.Types.ObjectId, ref: 'User' },
-    email:     { type: String, required: true, index: true },
-    code:      { type: String, required: true },
+    userId: { type: Schema.Types.ObjectId, ref: 'User' },
+    email: { type: String, required: true, index: true },
+    code: { type: String, required: true },
     expiresAt: { type: Date, required: true },
-    used:      { type: Boolean, default: false },
+    used: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

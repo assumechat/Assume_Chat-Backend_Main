@@ -12,16 +12,21 @@ import http from 'http';
 import { Server } from 'socket.io';
 import { initializeQueueSocket } from './sockets/queueSocket';
 import { initializeChatSocket } from './sockets/chatSocket';
+import feedbackRouter from './routes/feedback.Routes';
+import ReportRouter from './routes/report.Routes';
 
 async function bootstrap() {
     await connectDB();
 
     const app = express();
     const PORT = process.env.PORT || 3001;
-
     // ─── ENABLE CORS ─────────────────────────────────────────────────────────────
+    const corsOrigins = process.env.CORS_ORIGIN
+        ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
+        : ['http://localhost:3000'];
+
     app.use(cors({
-        origin: 'http://localhost:3000',
+        origin: corsOrigins,
         methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
         allowedHeaders: ['Content-Type', 'Authorization'],
         credentials: true
@@ -38,6 +43,9 @@ async function bootstrap() {
     app.use('/health', healthRouter);
     app.use('/Auth', AuthRouter);
     app.use('/userProfile', userProfileRouter);
+    app.use('/feedback', feedbackRouter);
+    app.use('/report', ReportRouter);
+
     app.get('/', (_req: Request, res: Response) => {
         res.send({ message: 'Assume Chat API up and running!' });
     });
