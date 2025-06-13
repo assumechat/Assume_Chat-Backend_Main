@@ -1,8 +1,8 @@
 import { Request, Response } from "express";
-import { BurstStatus, FeedbackModel } from "../models/Feedback.Models";
+import {  FeedbackModel } from "../models/Feedback.Models";
 import { sendError, sendSuccess } from "../utils/apiResponse";
 import { Types } from "mongoose";
-import { error } from "console";
+import { AuthRequest } from "../middleware/Auth.middleware";
 
 export const submitFeedback = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -13,7 +13,7 @@ export const submitFeedback = async (req: Request, res: Response): Promise<void>
     if (!feedbackTo) missingFields.push('feedbackTo');
     if (!comment) missingFields.push('comment');
     if (!rating) missingFields.push('rating');
-    // console.log(feedbackBy , feedbackTo , comment , rating);
+     console.log(feedbackBy , feedbackTo , comment , rating);
     if (missingFields.length > 0) {
       return sendError(res, `Missing required fields: ${missingFields.join(', ')}`, 400);
     }
@@ -30,15 +30,16 @@ export const submitFeedback = async (req: Request, res: Response): Promise<void>
 };
 
 //get feedback for unispace
-export const getAllfeedback=async( req: Request , res: Response): Promise<void>=>{
+export const getfeedbackById=async( req: AuthRequest , res: Response): Promise<void>=>{
   try{
-    const { userId} = req.query;
-    if(!userId) {
-      return sendError(res , userId || "Error fetching userid");
+    const userId = req.user?.id;
+   // console.log(userId);
+    if(!userId || !Types.ObjectId.isValid(userId as string)) {
+      return sendError(res ,  "Error fetching userid" , 400);
     }
     const filter: any = {
-      feedbackBy: userId,
-      isBurst: BurstStatus.FALSE,
+      feedbackBy: new Types.ObjectId(userId as string),
+      isBurst: false,
     };
     const feedback= await FeedbackModel.find(filter)
     .populate("feedbackBy", "name")
@@ -46,6 +47,9 @@ export const getAllfeedback=async( req: Request , res: Response): Promise<void>=
     .sort({ createdAt :-1})
      .lean();
     //console.log(feedback);
+    if(!feedback) {
+     return sendError(res ,' error fetching feedback' , 400 )
+    }
     return sendSuccess(res , feedback , "feedback fetched successfullt!" , 201);
   }
   catch(err: any){
@@ -54,22 +58,22 @@ export const getAllfeedback=async( req: Request , res: Response): Promise<void>=
   }
 }
 
-//handle burst
-export const isFeedbackBurst = async (req: Request , res: Response) : Promise<void> =>{
+//handle burst toggle
+export const isFeedbackBurst = async (req: AuthRequest , res: Response) : Promise<void> =>{
   try{
-    const { id} =req.body;
-    console.log(id);
+    const id =req.body.id;
+   // console.log(id);
     if(!id || !Types.ObjectId.isValid(id)) {
       return sendError(res, "Invalid or missing feedbackId", 400);
     }
-    const updatedFeedback = await FeedbackModel.findByIdAndUpdate( id , { isburst : BurstStatus.TRUE},
-      {new:true}
-    ).lean();
-    console.log(updatedFeedback);
-    if(!updatedFeedback) {
-      return sendError(res , "Card not Found" , 404);
+    const feedback = await FeedbackModel.findById(id);
+    if(!feedback) {
+      return sendError(res, "Feedback not found" , 404);
     }
-    return sendSuccess(res , updatedFeedback , "Card marked as burst" , 200);
+    feedback.isBurst =!feedback.isBurst;   //toggle
+    console.log(feedback);
+    await feedback.save();
+    return sendSuccess(res , feedback , `Feedback marked as ${feedback.isBurst} ? 'burst' : 'not burst` , 200);
   }
   catch (error: any) {
     console.error("Burst error:", error);

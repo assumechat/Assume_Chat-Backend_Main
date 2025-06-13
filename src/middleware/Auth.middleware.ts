@@ -4,6 +4,8 @@ import { verifyAccessToken } from '../utils/jwt';
 import { sendError } from '../utils/apiResponse';
 import { UserModel } from '../models/user.Models';
 import { UserProfileModel } from '../models/userProfile.Models';
+import { IUser } from '../types/user.type';
+import { Types } from 'mongoose';
 
 /**
  * Extend Express Request to include authenticated user and profile
@@ -12,6 +14,11 @@ export interface AuthRequest extends Request {
     user?: any;
     profile?: any;
 }
+
+export interface IUserLean extends IUser {
+    _id:string | Types.ObjectId;
+}
+
 
 /**
  * Middleware to protect routes and attach user & profile to req
@@ -29,12 +36,16 @@ export async function authGuard(
     const token = authHeader.split(' ')[1];
     try {
         const payload = verifyAccessToken(token);
-        const user = await UserModel.findById(payload.userId);
+        const user = await UserModel.findById(payload.userId) ;
         if (!user) {
             return sendError(res, 'Unauthorized: User not found', 401);
         }
         // Attach user to request
-        req.user = user;
+        // req.user = user;
+        req.user= {
+            ...user.toObject(),
+            id:( user._id as any ).toString(),
+        }
 
         // Optionally load user profile
         const profile = await UserProfileModel.findOne({ userId: user._id });
@@ -45,3 +56,5 @@ export async function authGuard(
         return sendError(res, 'Unauthorized: Invalid token', 401, err);
     }
 }
+
+
