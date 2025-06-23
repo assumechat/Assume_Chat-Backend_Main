@@ -27,7 +27,7 @@ export const PostForm: RequestHandler<{ id: string }> = async (
       return sendError(res, "You have already signed up for early access", 401);
     }
     const numUser = await EarlyAccessFormModel.countDocuments({});
-    if (numUser >= 100) {
+    if (numUser >= 500) {
       return sendError(
         res,
         "Early access limit has been hit we will open the forms again soon",
