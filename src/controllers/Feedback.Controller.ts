@@ -44,7 +44,7 @@ export const submitFeedback = async (
 };
 
 //get feedback for unispace
-export const getfeedbackById = async (
+export const getfeedbackByUserId = async (
   req: AuthRequest,
   res: Response
 ): Promise<void> => {
@@ -100,6 +100,30 @@ export const isFeedbackBurst = async (
     return sendError(
       res,
       error.message || "Error marking as burst",
+      500,
+      error
+    );
+  }
+};
+//get feedback by id
+export const getfeedbackById = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    const feedbackId = req.params.feedbackId;
+    if (!feedbackId) {
+      return sendError(res, "Feedback id not found", 400);
+    }
+    const feedback = await FeedbackModel.findById(feedbackId);
+    if (!feedback) {
+      return sendError(res, "Feedback not found", 400);
+    }
+    return sendSuccess(res, feedback, "feedback found successfully", 200);
+  } catch (error: any) {
+    return sendError(
+      res,
+      error.message || "Error finding feedback",
       500,
       error
     );
