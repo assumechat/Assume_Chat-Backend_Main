@@ -73,7 +73,15 @@ const signup: RequestHandler = async (req, res, next) => {
 
     return sendSuccess(
       res,
-      { user: userWithoutPassword, accessToken, refreshToken },
+      {
+        user: {
+          _id: userWithoutPassword._id,
+          name: userWithoutPassword.name,
+          email: userWithoutPassword.email,
+        },
+        accessToken,
+        refreshToken,
+      },
       "Signin Successful",
       201
     );
@@ -175,7 +183,11 @@ const refreshTokenHandler: RequestHandler = async (req, res, next) => {
       {
         accessToken: newAccessToken,
         refreshToken: newRefreshToken,
-        user: Cleaneduser,
+        user: {
+          _id: Cleaneduser._id,
+          name: Cleaneduser.name,
+          email: Cleaneduser.email,
+        },
       },
       "Token refreshed",
       200
