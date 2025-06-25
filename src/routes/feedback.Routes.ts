@@ -1,5 +1,10 @@
 import express from "express";
-import { getfeedbackById, isFeedbackBurst, submitFeedback } from "../controllers/Feedback.Controller";
+import {
+  getfeedbackById,
+  getfeedbackByUserId,
+  isFeedbackBurst,
+  submitFeedback,
+} from "../controllers/Feedback.Controller";
 import { authGuard } from "../middleware/Auth.middleware";
 
 const router = express.Router();
@@ -7,9 +12,11 @@ const router = express.Router();
 router.post("/submit-feedback", submitFeedback);
 
 //2.feedback fetch for unispace
-router.get("/get-feedback",authGuard, getfeedbackById);
+router.get("/get-feedback", authGuard, getfeedbackByUserId);
 
 //3.burst feedback
-router.post("/burst-feedback", authGuard , isFeedbackBurst);
+router.post("/burst-feedback", authGuard, isFeedbackBurst);
+
+router.get("/get-feedbackById/:feedbackId", getfeedbackById);
 
 export default router;
