@@ -21,11 +21,17 @@ export interface ChatMessage {
 /**
  * Event names used in the chat namespace
  */
+
+
+// updated enum with additional types...
 export enum ChatEvent {
   JOIN_ROOM = 'joinRoom',
   JOINED_ROOM = 'joinedRoom',
-  HANDSHAKE = 'handshake',    // <— new
+  LEAVE_ROOM = 'leaveRoom',
+  HANDSHAKE = 'handshake',
   MESSAGE = 'message',
   TYPING = 'typing',
+  STOP_TYPING = 'stopTyping',
+  PEER_JOINED = 'peerJoined',
   PEER_LEFT = 'peerLeft',
 }
