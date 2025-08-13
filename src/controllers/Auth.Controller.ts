@@ -106,15 +106,16 @@ const login: RequestHandler = async (req, res, next) => {
     const match = await bcrypt.compare(password, user.password);
     if (!match)
       return sendError(res, "Invalid credentials Wrong Password", 401);
+    // commented out to prevent multiple sessions for now
 
-    // NEW: reject if already logged in elsewhere
-    if (user.activeSession) {
-      return sendError(
-        res,
-        "You are already logged in on another device. Log out there first.",
-        409
-      );
-    }
+    //    NEW: reject if already logged in elsewhere
+    // if (user.activeSession) {
+    //   return sendError(
+    //     res,
+    //     "You are already logged in on another device. Log out there first.",
+    //     409
+    //   );
+    // }
     const payload = {
       userId: (user._id as Types.ObjectId).toString(),
       email: user.email,

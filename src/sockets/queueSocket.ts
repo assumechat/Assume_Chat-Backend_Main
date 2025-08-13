@@ -1,95 +1,219 @@
-// src/sockets/queueSocket.ts
 import { Server, Socket } from 'socket.io';
 
-// In-memory waiting list (for single-instance setups)
-const waiting: string[] = [];
+
+interface QueueUser {
+    socketId: string;
+    joinedAt: number;
+    preferences?: {
+        language?: string;
+        interests?: string[];
+    };
+}
+
+interface ActiveRoom {
+    roomId: string;
+    users: string[];
+    createdAt: number;
+}
+
+const waitingQueue: QueueUser[] = [];
+const activeRooms = new Map<string, ActiveRoom>();
+const userToRoom = new Map<string, string>();
+const QUEUE_TIMEOUT = 30000;
+const ROOM_TIMEOUT = 300000;// change in prod
 
 export function initializeQueueSocket(io: Server) {
     const queueNs = io.of('/queue');
 
     queueNs.on('connection', (socket: Socket) => {
-        console.log(`🔌 [Queue] ${socket.id} connected`);
-        // Notify just this socket of its position
         emitQueueUpdate(socket);
-        // Notify all waiting clients of updated counts
-        broadcastQueueUpdate();
-
-        // Handle join
-        socket.on('joinQueue', () => {
-            if (!waiting.includes(socket.id)) {
-                waiting.push(socket.id);
-                console.log(`➡️ [Queue] ${socket.id} joined (pos=${waiting.length})`);
+        broadcastQueueStats();
+        // back to the queue or the first one to the queue  
+        socket.on('joinQueue', (preferences = {}) => {
+            leaveCurrentRoom(socket.id);
+            
+            if (!isInQueue(socket.id)) {
+                const queueUser: QueueUser = {
+                    socketId: socket.id,
+                    joinedAt: Date.now(),
+                    preferences
+                };
+                
+                waitingQueue.push(queueUser);
+                
+                setTimeout(() => {
+                    handleQueueTimeout(socket.id);
+                }, QUEUE_TIMEOUT);
             }
-            broadcastQueueUpdate();
-            tryPair();
+            
+            broadcastQueueStats();
+            tryPairUsers();
         });
 
-        // Handle leave
         socket.on('leaveQueue', () => {
-            const idx = waiting.indexOf(socket.id);
-            if (idx !== -1) {
-                waiting.splice(idx, 1);
-                console.log(`⬅️ [Queue] ${socket.id} left`);
-            }
-            broadcastQueueUpdate();
-            tryPair();
+            removeFromQueue(socket.id);
+            broadcastQueueStats();
         });
 
-        // Clean up on disconnect
-        socket.on('disconnect', () => {
-            const idx = waiting.indexOf(socket.id);
-            if (idx !== -1) {
-                waiting.splice(idx, 1);
-                console.log(`❌ [Queue] ${socket.id} disconnected and removed`);
+        socket.on('finishChat', () => {
+            finishCurrentChat(socket.id);
+        });
+
+        socket.on('reconnectToRoom', ({ roomId }) => {
+            if (activeRooms.has(roomId) && activeRooms.get(roomId)!.users.includes(socket.id)) {
+                userToRoom.set(socket.id, roomId);
+                socket.emit('reconnectedToRoom', { roomId });
             }
-            broadcastQueueUpdate();
-            tryPair();
+        });
+
+        socket.on('disconnect', () => {
+            handleUserDisconnect(socket.id);
         });
     });
 
-    /** Send queue status to a single socket */
-    function emitQueueUpdate(socket: Socket) {
-        const pos = waiting.indexOf(socket.id);
-        socket.emit('queueUpdate', {
-            position: pos >= 0 ? pos + 1 : null,
-            waiting: waiting.length,
-            online: queueNs.sockets.size,
-        });
+    function isInQueue(socketId: string): boolean {
+        return waitingQueue.some(user => user.socketId === socketId);
     }
 
-    /** Broadcast queue status to all waiting clients in the queue */
-    /** Broadcast queue status to all connected clients */
-    function broadcastQueueUpdate() {
-        const waitingCount = waiting.length;
-        const onlineCount = queueNs.sockets.size;
-
-        // First, send a summary update to everyone (no position)
-        queueNs.emit('queueUpdate', {
-            position: null,
-            waiting: waitingCount,
-            online: onlineCount,
-        });
-
-        // Then, send detailed position updates to those in the waiting list
-        waiting.forEach((id, idx) => {
-            queueNs.to(id).emit('queueUpdate', {
-                position: idx + 1,
-                waiting: waitingCount,
-                online: onlineCount,
-            });
-        });
-    }
-    /** Pair off clients in the queue when there are at least two waiting */
-    function tryPair() {
-        while (waiting.length >= 2) {
-            const a = waiting.shift()!; // oldest
-            const b = waiting.shift()!; // next oldest
-            const roomId = `room-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-            console.log(`🤝 [Queue] Matched ${a} ↔ ${b} in ${roomId}`);
-
-            queueNs.to(a).emit('matched', { roomId, peer: b });
-            queueNs.to(b).emit('matched', { roomId, peer: a });
+    function removeFromQueue(socketId: string): void {
+        const index = waitingQueue.findIndex(user => user.socketId === socketId);
+        if (index !== -1) {
+            waitingQueue.splice(index, 1);
         }
-        broadcastQueueUpdate();
     }
+
+    function leaveCurrentRoom(socketId: string): void {
+        const currentRoom = userToRoom.get(socketId);
+        if (currentRoom && activeRooms.has(currentRoom)) {
+            const room = activeRooms.get(currentRoom)!;
+            room.users = room.users.filter(id => id !== socketId);
+            
+            if (room.users.length === 0) {
+                activeRooms.delete(currentRoom);
+            } else {
+                room.users.forEach(userId => {
+                    queueNs.to(userId).emit('peerLeftChat', { roomId: currentRoom });
+                });
+            }
+            
+            userToRoom.delete(socketId);
+        }
+    }
+    //exit chat remove id
+    function finishCurrentChat(socketId: string): void {
+        const currentRoom = userToRoom.get(socketId);
+        if (currentRoom && activeRooms.has(currentRoom)) {
+            const room = activeRooms.get(currentRoom)!;
+            
+            room.users.forEach(userId => {
+                queueNs.to(userId).emit('chatEnded', { roomId: currentRoom });
+                userToRoom.delete(userId);
+            });
+            
+            activeRooms.delete(currentRoom);
+        }
+        
+        broadcastQueueStats();
+    }
+
+    function handleQueueTimeout(socketId: string): void {
+        if (isInQueue(socketId)) {
+            removeFromQueue(socketId);
+            queueNs.to(socketId).emit('queueTimeout', { 
+                message: 'No match found within 30 seconds. Please try again.' 
+            });
+            broadcastQueueStats();
+        }
+    }
+
+    function handleUserDisconnect(socketId: string): void {
+        removeFromQueue(socketId);
+        leaveCurrentRoom(socketId);
+        broadcastQueueStats();
+    }
+    // try pairing up users only when with even numbers provide a mutex lock approach to prevent others from joining this
+    function tryPairUsers(): void {
+        while (waitingQueue.length >= 2) {
+            const user1 = waitingQueue.shift()!;
+            const user2 = waitingQueue.shift()!;
+            
+            const socket1 = queueNs.sockets.get(user1.socketId);
+            const socket2 = queueNs.sockets.get(user2.socketId);
+            
+            if (!socket1 || !socket2) {
+                if (socket1) waitingQueue.unshift(user1);
+                if (socket2) waitingQueue.unshift(user2);
+                continue;
+            }
+            
+            const roomId = `room-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+            const room: ActiveRoom = {
+                roomId,
+                users: [user1.socketId, user2.socketId],
+                createdAt: Date.now()
+            };
+            
+            activeRooms.set(roomId, room);
+            userToRoom.set(user1.socketId, roomId);
+            userToRoom.set(user2.socketId, roomId);
+            
+            socket1.emit('matched', { 
+                roomId, 
+                peer: user2.socketId,
+                peerJoinedAt: user2.joinedAt 
+            });
+            socket2.emit('matched', { 
+                roomId, 
+                peer: user1.socketId,
+                peerJoinedAt: user1.joinedAt 
+            });
+            
+            setTimeout(() => {
+                if (activeRooms.has(roomId)) {
+                    finishCurrentChat(user1.socketId);
+                }
+            }, ROOM_TIMEOUT);
+        }
+    }
+    //broadcaast queue updates
+    function emitQueueUpdate(socket: Socket): void {
+        const position = waitingQueue.findIndex(user => user.socketId === socket.id);
+        const currentRoom = userToRoom.get(socket.id);
+        
+        socket.emit('queueUpdate', {
+            position: position >= 0 ? position + 1 : null,
+            inQueue: position >= 0,
+            inChat: !!currentRoom,
+            currentRoom: currentRoom || null,
+            estimatedWait: position >= 0 ? Math.max(0, position * 5) : null
+        });
+    }
+    // broadcast stats
+    function broadcastQueueStats(): void {
+        const stats = {
+            waiting: waitingQueue.length,
+            online: queueNs.sockets.size,
+            activeChatRooms: activeRooms.size,
+            totalChatters: activeRooms.size * 2
+        };
+        
+        queueNs.emit('queueStats', stats);
+        
+        queueNs.sockets.forEach((socket) => {
+            emitQueueUpdate(socket);
+        });
+    }
+
+    setInterval(() => {
+        const now = Date.now();
+        for (const [roomId, room] of activeRooms.entries()) {
+            if (now - room.createdAt > ROOM_TIMEOUT) {
+                room.users.forEach(userId => {
+                    queueNs.to(userId).emit('chatEnded', { roomId, reason: 'timeout' });
+                    userToRoom.delete(userId);
+                });
+                activeRooms.delete(roomId);
+            }
+        }
+    }, 60000);
 }
