@@ -61,3 +61,21 @@ export async function deleteProfile(req: Request, res: Response, next: NextFunct
     return sendError(res, 'Failed to delete profile', 500, err);
   }
 }
+
+/** Increment invite count for a user */
+export async function incrementInviteCount(req: Request, res: Response, next: NextFunction) {
+  const userId = req.params.userId;
+  if (!userId || !Types.ObjectId.isValid(userId)) {
+    return sendError(res, 'Valid userId is required', 400);
+  }
+  try {
+    const profile = await UserProfileModel.findOneAndUpdate(
+      { userId },
+      { $inc: { inviteCount: 1 } },
+      { new: true, upsert: true, setDefaultsOnInsert: true }
+    );
+    return sendSuccess(res, profile, 'Invite count incremented');
+  } catch (err: any) {
+    return sendError(res, 'Failed to increment invite count', 500, err);
+  }
+}

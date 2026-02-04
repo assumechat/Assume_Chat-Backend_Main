@@ -29,6 +29,19 @@ const UserProfileSchema = new Schema<IUserProfile>(
       enum: Object.values(ConnectionPreference),
       required: true,
     },
+    walletAddress: {
+      type: String,
+      lowercase: true,
+      trim: true,
+    },
+    inviteCount: {
+      type: Number,
+      default: 0,
+    },
+    inviteCountSynced: {
+      type: Number,
+      default: 0,
+    },
   },
   { timestamps: true }
 );

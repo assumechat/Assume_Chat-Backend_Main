@@ -95,8 +95,11 @@ const signup: RequestHandler = async (req, res, next) => {
 const login: RequestHandler = async (req, res, next) => {
   const { email, password } = req.body;
   try {
-    if (!email || !password)
-      sendError(res, "Pls Provide Email Or Password", 401);
+    if (!email || !password) {
+      console.log("❌ Login failed: Missing email or password");
+      return sendError(res, "Pls Provide Email Or Password", 401);
+    }
+    console.log(`Attempting login for email: ${email}`);
     const user = (await UserModel.findOne({ email })) as InstanceType<
       typeof UserModel
     > | null;
@@ -104,8 +107,10 @@ const login: RequestHandler = async (req, res, next) => {
       return sendError(res, "Invalid credentials Email Not Found", 404);
 
     const match = await bcrypt.compare(password, user.password);
-    if (!match)
+    if (!match) {
+      console.log(`❌ Login failed: Password mismatch for ${email}`);
       return sendError(res, "Invalid credentials Wrong Password", 401);
+    }
     // commented out to prevent multiple sessions for now
 
     //    NEW: reject if already logged in elsewhere

@@ -14,6 +14,7 @@ import { createAdapter } from "@socket.io/redis-adapter";
 import Redis from "ioredis";
 import { initializeQueueSocket } from "./sockets/queueSocket";
 import { initializeChatSocket } from "./sockets/chatSocket";
+import { initializeScheduler } from "./utils/scheduler";
 import feedbackRouter from "./routes/feedback.Routes";
 import ReportRouter from "./routes/report.Routes";
 import AppFeedbackRouter from "./routes/AppFeedback.Routes";
@@ -29,24 +30,25 @@ async function bootstrap() {
   const corsOrigins = process.env.CORS_ORIGIN
     ? process.env.CORS_ORIGIN.split(",").map((origin) => origin.trim().replace(/^["']|["']$/g, ''))
     : ["http://localhost:3000", "http://localhost:3002"];
-  
+
   // Helper function to check if origin is allowed (including Cloudflare tunnels)
   const isOriginAllowed = (origin: string | undefined): boolean => {
     if (!origin) return true; // Allow requests with no origin
-    
+
     // Check exact match
     if (corsOrigins.includes(origin)) return true;
-    
+
     // Allow Cloudflare tunnel URLs in development (trycloudflare.com)
     if (process.env.NODE_ENV !== 'production' && origin.includes('trycloudflare.com')) {
       console.log('✅ Allowing Cloudflare tunnel origin:', origin);
       return true;
     }
-    
+
     return false;
   };
-  
+
   console.log('🌐 CORS Origins configured:', corsOrigins);
+  console.log('🚀 NODE_ENV:', process.env.NODE_ENV);
 
   app.use(
     cors({
@@ -54,7 +56,7 @@ async function bootstrap() {
         if (isOriginAllowed(origin)) {
           return callback(null, true);
         }
-        
+
         // Log for debugging
         console.log('🚫 CORS blocked origin:', origin);
         console.log('✅ Allowed origins:', corsOrigins);
@@ -99,7 +101,7 @@ async function bootstrap() {
 
   // attach Socket.IO
   const io = new Server(httpServer, {
-    cors: { 
+    cors: {
       origin: (origin, callback) => {
         if (isOriginAllowed(origin)) {
           return callback(null, true);
@@ -115,7 +117,7 @@ async function bootstrap() {
     pingTimeout: 60000,
     pingInterval: 25000,
   });
-  
+
   // Log socket connections for debugging
   io.engine.on('connection_error', (err) => {
     console.error('❌ Socket.IO connection error:', err.message);
@@ -174,6 +176,9 @@ async function bootstrap() {
   // initialize your /queue and /chat namespaces
   initializeQueueSocket(io);
   initializeChatSocket(io);
+
+  // initialize scheduler
+  initializeScheduler();
 
   // start listening
   httpServer.listen(PORT, () =>
